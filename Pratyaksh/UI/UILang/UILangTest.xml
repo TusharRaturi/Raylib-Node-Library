@@ -1,0 +1,141 @@
+<Pratyaksh.UI.DemoPanel context="logic">
+    
+    <!-- 1. Draw the main Section background and header -->
+    <Background color="Fade(Gray, 0.65f)" 
+                opacity="0.08f" 
+                title="Layout Engine Showcase" 
+                headerColor="Fade(DarkBlue, 0.7f)" 
+                textColor="White" />
+
+    <Scroll width="ContentWidth" height="RemainingHeight - 10">
+        
+        <!-- === Alert Banner Demonstration === -->
+        <AlertBanner text="System Status: All services operational" 
+                     status="Success" 
+                     width="ContentWidth - 20" 
+                     height="28" />
+        
+        <Space size="10" />
+
+        <!-- === Status Badges === -->
+        <Horizontal spacing="35" height="24">
+            <StatusBadge text="Active" state="Active" />
+            <StatusBadge text="Processing" state="Processing" />
+            <LinkButton text="Open GitHub Repo" url="https://github.com/Binary-Tantra/PratyakshLib" />
+        </Horizontal>
+
+        <Space size="10" />
+        
+        <!-- === A simple text element === -->
+        <Text content="Welcome to the UI Demo Panel!" fontSize="15" color="Gold" />
+        
+        <Space size="25" />
+
+        <!-- === Colored Custom Buttons Demonstration === -->
+        <Horizontal spacing="10" height="25">
+            <Button text="Primary" width="85" height="25" onClick="logic.OnDemoButtonPressed" actionValue="0" 
+                    fillColor="(28, 100, 200, 255)" borderColor="SkyBlue" textColor="White" />
+            
+            <Button text="Danger" width="85" height="25" onClick="logic.OnDemoButtonPressed" actionValue="30" 
+                    fillColor="(180, 40, 40, 255)" borderColor="Red" textColor="White" />
+            
+            <Button text="Default" width="85" height="25" onClick="logic.OnDemoButtonPressed" actionValue="45" />
+        </Horizontal>
+        
+        <Space size="10" />
+        
+        <!-- === Cycle Selector === -->
+        <Horizontal spacing="0" height="25">
+            <Text content="Theme Mode: " fontSize="15" color="White" />
+            <Space size="RemainingWidth - 290" />
+            <CycleSelector width="160" height="24">
+                <Option>Dark Mode</Option>
+                <Option>Light Mode</Option>
+                <Option>High Contrast</Option>
+                <Option>Cyberpunk</Option>
+            </CycleSelector>
+        </Horizontal>
+
+        <Space size="10" />
+
+        <!-- === Form Inputs (Standard & Masked Password) === -->
+        <Horizontal spacing="0" height="25">
+            <Text content="User Name: " fontSize="15" color="White" />
+            <Space size="RemainingWidth - 310" />
+            
+            <InputField placeholder="Type name..." text="fieldText" width="140" height="24" 
+                        assignProperty="InputFieldText" to="logic.nameField" />
+            
+            <Space size="5" />
+            <Label bindTo="logic.nameField" fontSize="15" color="White" />
+        </Horizontal>
+
+        <Space size="5" />
+
+        <Horizontal spacing="0" height="25">
+            <Text content="Password:  " fontSize="15" color="White" />
+            <Space size="RemainingWidth - 310" />
+            <InputField placeholder="Password..." width="140" height="24" isMasked="true" />
+        </Horizontal>
+
+        <Space size="10" />
+
+        <!-- === Slider Demonstration === -->
+        <Horizontal spacing="60" height="22">
+            <Text content="Volume:    " fontSize="15" color="White" />
+            <Slider min="0f" max="100f" width="140" height="20" format="{0:0}%" step="1f" />
+        </Horizontal>
+
+        <Space size="10" />
+
+        <!-- === Text Truncation Demonstration === -->
+        <Horizontal spacing="55" height="20">
+            <Text content="Long Title: " fontSize="15" color="White" />
+            <TextTruncated content="This is a very long text string that will truncate nicely when exceeding width limit" 
+                           width="240" color="LightGray" />
+        </Horizontal>
+
+        <Space size="10" />
+
+        <!-- === Nested Selectables & Dropdown === -->
+        <TextPanelPro text="Dropdown &amp; Custom Selectables" width="Width - 30" height="25" 
+                      bgColor="DarkGreen" textColor="White" />
+
+        <Space size="10" />
+
+        <Horizontal spacing="60" dynamicHeight="height">
+            <Text content="Resolution: " fontSize="15" color="White" />
+            <Dropdown width="150" height="24" assignProperty="Height" to="height">
+                <Option>1920x1080</Option>
+                <Option>2560x1440</Option>
+                <Option>3840x2160</Option>
+            </Dropdown>
+        </Horizontal>
+
+        <Space size="15" />
+
+        <Horizontal spacing="0" height="100">
+            
+            <!-- Left Column: Color Selectables -->
+            <Vertical spacing="0" height="135">
+                <Scroll width="135" height="100" padding="5">
+                    <Background color="DarkGray" />
+                    
+                    <Selectable text="Red"      width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                    <Selectable text="Sky Blue" width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                    <Selectable text="Orange"   width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                    <Selectable text="Green"    width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                    <Selectable text="Magenta"  width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                    <Selectable text="Yellow"   width="120" height="20" onSelect="logic.OnDemoSelectablePressed" />
+                </Scroll>
+            </Vertical>
+
+            <Space size="20" />
+            
+            <!-- Right Column: Panel displaying selected color -->
+            <Panel width="RemainingWidth - 20" height="100" color="logic.currentSelectedColor" />
+            
+        </Horizontal>
+    </Scroll>
+
+</Pratyaksh.UI.DemoPanel>

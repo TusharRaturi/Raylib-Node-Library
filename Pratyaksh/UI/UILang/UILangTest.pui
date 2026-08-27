@@ -1,0 +1,153 @@
+PUILReference
+[
+	Version = 0.1
+	Class = Pratyaksh.UI.DemoPanel
+	ReferenceName = logic
+]
+
+// 1. Draw the main Section background and header
+Background
+[
+	Color = Fade(Gray, 0.65f)
+	Header = 0.08f
+	Title = "Layout Engine Showcase"
+	HeaderColor = Fade(DarkBlue, 0.7f)
+	TextColor = White
+]
+
+Scroll
+[
+	Width = logic.ContentWidth
+	Height = logic.RemainingHeight - 10
+	
+	// --- Alert Banner Demonstration ---
+	AlertBanner
+	[
+		Title = "System Status: All services operational"
+		Type = Success
+		Width = ContentWidth - 20
+		Height = 28
+	]
+	
+	Space(10)
+
+	// --- Status Badges ---
+	Horizontal(35)
+	[
+		StatusBadge("Active", Active)
+		StatusBadge("Processing", Processing)
+		LinkButton("Open GitHub Repo", "https://github.com/Binary-Tantra/PratyakshLib")
+	](24)
+
+	Space(10)
+	
+	// --- A simple text element ---
+	Text("Welcome to the UI Demo Panel!", 15, Gold)
+	
+	Space(25)
+
+	// Colored Custom Buttons Demonstration
+	Horizontal(10)
+	[
+		Button("Primary", 85, 25, logic.OnDemoButtonPressed, 0, fillColor: (28, 100, 200, 255), borderColor: SkyBlue, textColor: White)
+		Button("Danger", 85, 25, logic.OnDemoButtonPressed, 30, fillColor: (180, 40, 40, 255), borderColor: Red, textColor: White)
+		Button("Default", 85, 25, logic.OnDemoButtonPressed, 45)
+	](25)
+	
+	Space(10)
+	
+	// --- Cycle Selector ---
+	Horizontal(0)
+	[
+		Text("Theme Mode: ", 15, White)
+
+		Space(RemainingWidth - 290)
+
+		CycleSelector(["Dark Mode", "Light Mode", "High Contrast", "Cyberpunk"], 160, 24)
+	](25)
+
+	Space(10)
+
+	// --- Form Inputs (Standard & Masked Password) ---
+	Horizontal(0)
+	[
+		Text("User Name: ", 15, White)
+
+		Space(RemainingWidth - 310)
+
+		logic.nameField = InputField("Type name...", fieldText, 140, 24).InputFieldText
+
+		Space(5)
+
+		Label(logic.nameField, 15, White)
+	](25)
+
+	Space(5)
+
+	Horizontal(0)
+	[
+		Text("Password:  ", 15, White)
+
+		Space(RemainingWidth - 310)
+
+		InputField("Password...", 140, 24, isMasked: true)
+	](25)
+
+	Space(10)
+
+	// --- Slider Demonstration ---
+	Horizontal(60)
+	[
+		Text("Volume:    ", 15, White)
+		Slider(0f, 100f, 140, 20, format: "{0:0}%", step: 1f)
+	](22)
+
+	Space(10)
+
+	// --- Text Truncation Demonstration ---
+	Horizontal(55)
+	[
+		Text("Long Title: ", 15, White)
+		TextTruncated("This is a very long text string that will truncate nicely when exceeding width limit", 240, LightGray)
+	](20)
+
+	Space(10)
+
+	// --- Nested Selectables & Dropdown ---
+	TextPanelPro("Dropdown & Custom Selectables", Width - 30, 25, DarkGreen, White)
+
+	Space(10)
+
+	int height = 0
+	layout.BeginHorizontal(60)
+	{
+		Text("Resolution: ", 15, White)
+		
+		height = Dropdown(["1920x1080", "2560x1440", "3840x2160"], 150, 24).Height
+	}(height)
+
+	Space(15)
+
+	Horizontal(0)
+	[
+		Vertical(0)
+		[
+			Scroll(135, 100, 5)
+			[
+				Background(DarkGray)
+				
+				Selectable("Red",		120, 20, logic.OnDemoSelectablePressed)
+				Selectable("Sky Blue",	120, 20, logic.OnDemoSelectablePressed)
+				Selectable("Orange",	120, 20, logic.OnDemoSelectablePressed)
+				Selectable("Green",		120, 20, logic.OnDemoSelectablePressed)
+				Selectable("Magenta",	120, 20, logic.OnDemoSelectablePressed)
+				Selectable("Yellow",	120, 20, logic.OnDemoSelectablePressed)
+			]
+		](135)
+
+		Space(20)
+		
+		// Right Column: Panel displaying selected color
+		Panel(RemainingWidth - 20, 100, logic.currentSelectedColor)
+	](100);
+]

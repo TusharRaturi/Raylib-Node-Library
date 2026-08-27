@@ -1,0 +1,14 @@
+MOD StandardLib
+LEX UILangTokens
+
+DEF_START
+
+	DEF Test
+
+DEF_END
+
+IMPL_START
+
+	IMPL Test => Identifier
+
+IMPL_END
