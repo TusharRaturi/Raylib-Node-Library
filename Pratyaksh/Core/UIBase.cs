@@ -30,8 +30,14 @@ public abstract class UIBase : EditorObject, IPointerVisitable
         set
         {
             Vector2 required = value;
-            Vector2 diff = required - Parent?.Position ?? Vector2.Zero;
-            RelativePosition = diff;
+
+            if (parent == null)
+                RelativePosition = required;
+            else
+            {
+                Vector2 diff = required - CalcParentBasisPos(parentBasis, uibParent, parent);
+                RelativePosition = diff;
+            }
         }
     }
 

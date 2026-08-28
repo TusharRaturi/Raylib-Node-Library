@@ -506,7 +506,7 @@ public class LayoutEngine
 
         layoutElements[id] = layoutElements[id].Activate();
 
-        layoutElements[id].UIElement.RelativePosition = new Vector2(posX, posY);
+        layoutElements[id].UIElement.Position = new Vector2(posX, posY);
         layoutElements[id].UIElement.Render();
 
         return layoutElements[id].Get<T>();
@@ -557,9 +557,6 @@ public class LayoutEngine
     {
         Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
-        if (defaultParent != null) // then make relative.
-            pos -= defaultParent.Position;
-
         T drawnElem = DrawElementAbsolute(element.Id, () => element, (stored) => { }, (int)pos.X, (int)pos.Y);
         if (updateLayout) NotifyDraw((int)drawnElem.Width, (int)drawnElem.Height);
         return drawnElem;
@@ -568,9 +565,6 @@ public class LayoutEngine
     public T DrawElement<T>(Func<Vector2, T> drawAbsoluteCaller, bool updateLayout = true) where T : UIBase
     {
         Vector2 pos = new(PosXAbs_Dynamic(), PosYAbs_Dynamic());
-
-        if (defaultParent != null) // then make relative.
-            pos -= defaultParent.Position;
 
         T drawnElem = drawAbsoluteCaller.Invoke(pos);
         if (updateLayout) NotifyDraw(drawnElem.Width, drawnElem.Height);
