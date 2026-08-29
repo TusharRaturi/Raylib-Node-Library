@@ -64,6 +64,8 @@ public class LayoutEngine
 
     private Stack<EditorObject?> parentStack = new();
     private Stack<int> activeScrollViews = new();
+    private Stack<(int id, LayoutOpType opType, bool hasExtraLayout)> activePanels = new();
+    private Stack<Core.Rectangle> scissorStack = new();
 
     private EditorObject? defaultParent = null;
 
@@ -154,6 +156,11 @@ public class LayoutEngine
         layoutOpsIdx = -1;
         lastHorizontalIdx = -1;
         lastVerticalIdx = -1;
+
+        activePanels.Clear();
+        activeScrollViews.Clear();
+        scissorStack.Clear();
+        parentStack.Clear();
 
         DeleteElements(layoutElements);
     }
@@ -477,7 +484,7 @@ public class LayoutEngine
             else modifiedHeaderPer = headerPerc;
 
             DrawSectionAbsolute(panelHeading, x, y, modifiedW, modifiedH, modifiedHeaderPer, 20, headingColor ?? Raylib_cs.Color.DarkGray, bodyColor, textColor ?? Raylib_cs.Color.White);
-            
+
             if (updateLayoutAccHeader)
             {
                 if (modifiedHeaderPer > 0)
@@ -958,6 +965,126 @@ public class LayoutEngine
         NotifyDraw(endWidth, 0);
     }
 
+    private void PushScissor(Core.Rectangle rect)
+    {
+        Core.Rectangle clippedRect = rect;
+        if (scissorStack.Count > 0)
+        {
+            Core.Rectangle current = scissorStack.Peek();
+            float left = Math.Max(current.X, rect.X);
+            float top = Math.Max(current.Y, rect.Y);
+            float right = Math.Min(current.X + current.Width, rect.X + rect.Width);
+            float bottom = Math.Min(current.Y + current.Height, rect.Y + rect.Height);
+            float width = Math.Max(0, right - left);
+            float height = Math.Max(0, bottom - top);
+            clippedRect = new Core.Rectangle(left, top, width, height);
+        }
+
+        scissorStack.Push(clippedRect);
+        Raylib_cs.Raylib.BeginScissorMode((int)clippedRect.X, (int)clippedRect.Y, (int)clippedRect.Width, (int)clippedRect.Height);
+    }
+
+    private void PopScissor()
+    {
+        if (scissorStack.Count == 0)
+            return;
+
+        scissorStack.Pop();
+        Raylib_cs.Raylib.EndScissorMode();
+
+        if (scissorStack.Count > 0)
+        {
+            Core.Rectangle prev = scissorStack.Peek();
+            Raylib_cs.Raylib.BeginScissorMode((int)prev.X, (int)prev.Y, (int)prev.Width, (int)prev.Height);
+        }
+    }
+
+    public Panel BeginPanel(int id, int width, int height, int spacing, LayoutOpType layoutFlowDirection)
+    {
+        bool found = layoutElements.ContainsKey(id);
+        if (!found)
+        {
+            Panel newPanel = new(width, height, defaultParent);
+            ElementInfo elem = new(newPanel, null);
+            layoutElements.Add(id, elem);
+        }
+
+        layoutElements[id] = layoutElements[id].Activate();
+        Panel pnl = layoutElements[id].Get<Panel>();
+
+        pnl.Size = new Vector2(width, height);
+        pnl.Position = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
+
+        Core.Rectangle scissorRect = pnl.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
+        PushScissor(scissorRect);
+
+        int startX = (int)pnl.Position.X;
+        int startY = (int)pnl.Position.Y;
+
+        bool hasExtraLayout = (layoutOpsIdx == -1) || (layoutOps[layoutOpsIdx].OpType == layoutFlowDirection);
+
+        if (layoutFlowDirection == LayoutOpType.Vertical)
+        {
+            if (hasExtraLayout)
+                BeginHorizontalEx(0, startX);
+
+            BeginVerticalEx(spacing, startY);
+        }
+        else
+        {
+            if (hasExtraLayout)
+                BeginVerticalEx(0, startY);
+
+            BeginHorizontalEx(spacing, startX);
+        }
+
+        parentStack.Push(defaultParent);
+        defaultParent = pnl;
+        activePanels.Push((id, layoutFlowDirection, hasExtraLayout));
+
+        return pnl;
+    }
+
+    public void EndPanel()
+    {
+        if (activePanels.Count == 0)
+            return;
+
+        (int pId, LayoutOpType opType, bool hasExtraLayout) = activePanels.Pop();
+        Panel pnl = layoutElements[pId].Get<Panel>();
+
+        if (hasExtraLayout)
+        {
+            if (opType == LayoutOpType.Vertical)
+            {
+                EndVertical(pnl.Width);
+                EndHorizontal(pnl.Height);
+            }
+            else
+            {
+                EndHorizontal(pnl.Height);
+                EndVertical(pnl.Width);
+            }
+        }
+        else
+        {
+            if (opType == LayoutOpType.Vertical)
+            {
+                EndVertical(pnl.Width);
+            }
+            else
+            {
+                EndHorizontal(pnl.Height);
+            }
+        }
+
+        PopScissor();
+
+        defaultParent = parentStack.Pop();
+
+        pnl.Render();
+    }
+
     // Add the spacing parameter to the method signature
     public ScrollView BeginScrollView(int id, int viewWidth, int viewHeight, int verticalSpacing = 0, int startXOffset = 0, int startYOffset = 0)
     {
@@ -973,44 +1100,10 @@ public class LayoutEngine
         ScrollView svc = layoutElements[id].Get<ScrollView>();
 
         svc.Size = new Vector2(viewWidth, viewHeight);
-        svc.RelativePosition = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
-
-        if (defaultParent != null)
-            svc.RelativePosition -= defaultParent.Position;
+        svc.Position = new Vector2(PosXAbs_Dynamic(), PosYAbs_Dynamic());
 
         Core.Rectangle scissorRect = svc.GetScissorRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
-
-        float scissorEndX = scissorRect.X + scissorRect.Width;
-        float scissorEndY = scissorRect.Y + scissorRect.Height;
-
-        // Now we cut the scroll scissor according to current parent's scissor if current parent scissor is smaller than required scroll scissor XD
-        float defaultParentEndX;
-        float defaultParentEndY;
-
-        if (defaultParent != null)
-        {
-            // Note: We are using interactable rect's width/height instead of visual width height. They are same for both UI and actors right now so this works.
-            // Also: This is using GetInteractableRect, which handles WS/SS shenanigans. If we change it, we would have to handle then!
-            Core.Rectangle parentRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
-            defaultParentEndX = defaultParent.Position.X + parentRect.Width;
-            defaultParentEndY = defaultParent.Position.Y + parentRect.Height;
-        }
-        else defaultParentEndX = defaultParentEndY = float.PositiveInfinity;
-
-        int scissorWidth;
-        int scissorHeight;
-
-        if (defaultParentEndX < scissorEndX)
-            scissorWidth = (int)(scissorRect.Width - (scissorEndX - defaultParentEndX));
-        else
-            scissorWidth = (int)scissorRect.Width;
-
-        if (defaultParentEndY < scissorEndY)
-            scissorHeight = (int)(scissorRect.Height - (scissorEndY - defaultParentEndY));
-        else
-            scissorHeight = (int)scissorRect.Height;
-
-        Raylib_cs.Raylib.BeginScissorMode((int)scissorRect.X, (int)scissorRect.Y, scissorWidth, scissorHeight);
+        PushScissor(scissorRect);
 
         int startX = (int)svc.Position.X;
         int startY = (int)svc.Position.Y;
@@ -1020,7 +1113,7 @@ public class LayoutEngine
         AddSpace(startXOffset + 1);
         BeginVerticalEx(verticalSpacing, startY + (int)svc.ScrollOffset.Y);
         AddSpace(startYOffset);
-        
+
         parentStack.Push(defaultParent);
         defaultParent = svc;
         activeScrollViews.Push(id);
@@ -1044,16 +1137,9 @@ public class LayoutEngine
         EndVertical(svc.Width);
         EndHorizontal(svc.Height);
 
-        Raylib_cs.Raylib.EndScissorMode();
+        PopScissor();
 
         defaultParent = parentStack.Pop();
-
-        // Re-apply the parent's scissor rect to prevent leaking out of bounds
-        if (defaultParent != null)
-        {
-            Core.Rectangle pRect = defaultParent.GetInteractableRect(Engine.Instance.InteractionManager.WorldToScreenTransformer);
-            Raylib_cs.Raylib.BeginScissorMode((int)pRect.X, (int)pRect.Y, (int)pRect.Width, (int)pRect.Height);
-        }
 
         svc.Render();
     }

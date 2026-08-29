@@ -10,7 +10,8 @@ public class DemoPanel : UILayoutBase
 
     private int scrollViewId;
     private int[] buttonIds;
-    
+
+    private int panelId;
     private int inputFieldId;
     private string fieldText;
     private int nameFieldLabelId;
@@ -48,6 +49,7 @@ public class DemoPanel : UILayoutBase
         inputFieldId = IdGen.GetNewID();
         fieldText = "";
 
+        panelId = IdGen.GetNewID();
         nameFieldLabelId = IdGen.GetNewID();
 
         passwordFieldId = IdGen.GetNewID();
@@ -212,8 +214,8 @@ public class DemoPanel : UILayoutBase
 
             layout.AddSpace(10);
 
-            // --- Form Inputs (Standard & Masked Password) ---
-            layout.BeginHorizontal(0);
+            // Form Inputs (Standard text & Masked text)
+            layout.BeginPanel(panelId, RemainingWidth, 25, 0, LayoutOpType.Horizontal);
             {
                 layout.Text("User Name: ", 15, Raylib_cs.Color.White);
 
@@ -225,7 +227,7 @@ public class DemoPanel : UILayoutBase
 
                 layout.Label(nameFieldLabelId, nameField, 15, Raylib_cs.Color.White);
             }
-            layout.EndHorizontal(25);
+            layout.EndPanel();
 
             layout.AddSpace(5);
 
