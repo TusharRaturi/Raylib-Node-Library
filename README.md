@@ -3,7 +3,7 @@
 [![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4.svg)](https://dotnet.microsoft.com/)
 [![Raylib-cs 8.0](https://img.shields.io/badge/Raylib--cs-8.0.0-black.svg)](https://github.com/Subtixx/Raylib-cs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.1.7-brightgreen.svg)](https://github.com/Binary-Tantra/PratyakshLib)
+[![Version](https://img.shields.io/badge/version-0.1.12-brightgreen.svg)](https://github.com/Binary-Tantra/PratyakshLib)
 
 **Pratyaksh** (*प्रत्यक्ष* — meaning *apparent, tangible, visual*) is a modular, high-performance C# GUI toolkit and node-graph editing system built on top of **.NET 10** and **[Raylib-cs](https://github.com/Subtixx/Raylib-cs)**. 
 
