@@ -89,7 +89,42 @@ public class WireVisual : Actor
 
     protected override void OnDraw()
     {
-        Raylib.DrawLineBezier(wireStart.GetPos(), wireEnd.GetPos(), wireThickness, wireColor);
+        Vector2 p0 = wireStart.GetPos();
+        Vector2 p3 = wireEnd.GetPos();
+        float dist = Vector2.Distance(p0, p3);
+        float offset = Math.Max(dist * 0.5f, 35.0f);
+
+        Vector2 t0;
+        Vector2 t3;
+
+        PortVisual? sp = wireStart.EditorObject as PortVisual;
+        PortVisual? ep = wireEnd.EditorObject as PortVisual;
+
+        if (sp != null && ep != null)
+        {
+            t0 = sp.GetBezierTangent(offset);
+            t3 = ep.GetBezierTangent(offset);
+        }
+        else if (sp != null)
+        {
+            t0 = sp.GetBezierTangent(offset);
+            t3 = -t0;
+        }
+        else if (ep != null)
+        {
+            t3 = ep.GetBezierTangent(offset);
+            t0 = -t3;
+        }
+        else
+        {
+            t0 = new Vector2(offset, 0);
+            t3 = new Vector2(-offset, 0);
+        }
+
+        Vector2 p1 = p0 + t0;
+        Vector2 p2 = p3 + t3;
+
+        Raylib.DrawSplineSegmentBezierCubic(p0, p1, p2, p3, wireThickness, wireColor);
     }
 
     public void NotifyDeleted(PortVisual portUI)

@@ -29,6 +29,8 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
                 Category = template.Category,
                 InputPortTypeNames = [.. template.InputPortTypeNames],
                 OutputPortTypeNames = [.. template.OutputPortTypeNames],
+                Flow = (int)template.Flow,
+                ShowHeader = template.ShowHeader,
                 Payload = template.Payload != null ? ((JsonSerializationEngine)engine).SerializeToElement(template.Payload) : null
             };
 
@@ -63,6 +65,8 @@ public class GraphSerializer(ISerializationEngine engine) : BaseSerializer(engin
             {
                 nd.PositionX = vis.RelativePosition.X;
                 nd.PositionY = vis.RelativePosition.Y;
+                nd.Flow = (int)vis.Flow;
+                nd.ShowHeader = vis.ShowHeader;
                 var payloads = vis.GetUIStatePayloads();
                 foreach (var p in payloads)
                 {

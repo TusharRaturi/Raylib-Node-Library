@@ -72,7 +72,7 @@ public class NodeRegistry
         return [.. templatesByCategory.Keys];
     }
     
-    public NodeVisual? SpawnNode(Graph graph, int templateId, Vector2 position)
+    public NodeVisual? SpawnNode(Graph graph, int templateId, Vector2 position, NodeFlow? overrideFlow = null, bool? overrideShowHeader = null)
     {
         NodeTemplate? template = GetTemplate(templateId);
         if (template == null) return null;
@@ -93,7 +93,9 @@ public class NodeRegistry
 
         Core.DataModel.Node n = graph.AddNode(template.Id, inPorts, outPorts);
         
-        NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, position.X, position.Y);
+        NodeFlow flow = overrideFlow ?? template.Flow;
+        bool showHeader = overrideShowHeader ?? template.ShowHeader;
+        NodeVisual nodeVis = new(n.Id, template.UIElements, template.Name, position.X, position.Y, flow, showHeader);
         return nodeVis;
     }
 }

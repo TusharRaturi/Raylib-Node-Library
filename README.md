@@ -48,6 +48,7 @@ graph TD
 - ⚡ **Reactive Two-Way MVVM Data Binding**: Synchronize model variables with UI inputs automatically without manual event wiring.
 - 🧠 **Pure Headless Graph Core**: Decoupled graph domain logic (`Graph`, `Node`, `Port`, `Variable`, `Connection`) suitable for CLI evaluation, unit tests, and backend processing.
 - 🔌 **Visual Node Canvas**: 2D camera with panning and zooming, smooth cubic bezier wires with type-based color coding, and draggable node bodies.
+- 🔀 **Configurable Node Flows**: Support for both horizontal (left-to-right) and vertical (top-to-bottom) execution flows, with dynamically hidable node headers.
 - 🧩 **Embedded Node Widgets**: Place text labels, input fields, toggles, buttons, selectables, and nested groups directly inside node bodies.
 - 🔍 **Integrated Tooling**: Fuzzy-search node palette, context menus, variable management panel, and property inspector.
 - 💾 **Full JSON State Persistence**: Serialize and deserialize entire workspaces—including graph topologies, node positions, variable declarations, templates, and UI panel states.
@@ -181,7 +182,9 @@ NodeEditorEngine.NodeRegistry.RegisterNode(new NodeTemplate(
     outputPortTypeNames: ["Float"],
     uiElements: [
         (UIElementType.Text, new TextDesc("Computes: A + B", Color.White))
-    ]
+    ],
+    flow: NodeFlow.Horizontal,
+    showHeader: true
 ));
 
 // Register an Interactive Node with an Embedded Input Field and Button
@@ -193,7 +196,9 @@ NodeEditorEngine.NodeRegistry.RegisterNode(new NodeTemplate(
     uiElements: [
         (UIElementType.InputField, new InputFieldDesc("Enter value...", "", 140, 25)),
         (UIElementType.Button, new ButtonDesc("Execute", 140, 25, (btn) => Console.WriteLine("Executed!")))
-    ]
+    ],
+    flow: NodeFlow.Vertical,
+    showHeader: false
 ));
 ```
 

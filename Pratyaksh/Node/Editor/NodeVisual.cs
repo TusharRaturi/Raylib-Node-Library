@@ -5,6 +5,12 @@ using Pratyaksh.UI;
 using Pratyaksh.Node.Core.DataModel;
 using System.Numerics;
 
+public enum NodeFlow
+{
+    Horizontal,
+    Vertical
+}
+
 public class NodeVisual : Actor, IPointerInteractable, IDragable
 {
     private readonly int nodeId;
@@ -29,6 +35,9 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
     private Raylib_cs.Color hdRectFillColor = new((byte)125, (byte)50, (byte)50, (byte)255);
     private Raylib_cs.Color hdRectBorderColor = Raylib_cs.Raylib.Fade(Raylib_cs.Color.DarkBlue, 0.4f);
 
+    private NodeFlow nodeExecFlow;
+    private bool showHeader = true;
+
     private bool isDragging;
     private Vector2 dragOffset;
 
@@ -49,11 +58,31 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
     public override Rectangle InteractionRect => new(rect.X, rect.Y, rect.Width, rect.Height);
 
+    public NodeFlow Flow { get => nodeExecFlow; }
+
+    public bool ShowHeader
+    {
+        get => showHeader;
+        set
+        {
+            if (showHeader != value)
+            {
+                showHeader = value;
+                UpdateNodeVisual();
+            }
+        }
+    }
+
     public NodeVisual(int nodeId,
                       List<(UIElementType elemType, UIElementDescription elemDesc)> bodyUIElements,
-                      string title, float posX, float posY, Drawable? parent = null) : base(parent)
+                      string title, float posX, float posY,
+                      NodeFlow nodeExecFlow = NodeFlow.Horizontal,
+                      bool showHeader = true,
+                      Drawable? parent = null) : base(parent)
     {
         this.nodeId = nodeId;
+        this.nodeExecFlow = nodeExecFlow;
+        this.showHeader = showHeader;
 
         NodeEditorEngine.NotifyConnectNodeAndUI(nodeId, this);
 
@@ -86,26 +115,12 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
         inputPortIdNames = n.InputPortIdNames;
         outputPortIdNames = n.OutputPortIdNames;
 
-        float width = 200;
-        float height = 75;
+        float defaultWidth = 200;
+        float defaultHeight = 75;
+        float headerHeight = showHeader ? 20 : 0;
 
-        float headerWidth = width;
-        float headerHeight = 15;
-
-        int portsInitialYOffset = 30;
         int portsPadding = 15;
         int portsSpacing = 35;
-        int portsMax = Math.Max(inputPortIdNames.Count, outputPortIdNames.Count);
-
-        if (portsMax > 2)
-        {
-            height += (portsMax - 2) * portsSpacing + portsPadding;
-        }
-
-        int uiElementsNeededHeight = portsInitialYOffset + (bodyUIElements.Count * 25) + ((bodyUIElements.Count - 1) * 5) + 10; // + 10 is extra space at end.
-
-        if (height < uiElementsNeededHeight)
-            height = uiElementsNeededHeight;
 
         int uiElementsNeededWidth = -1;
         for (int i = 0; i < bodyUIElements.Count; i++)
@@ -121,56 +136,201 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
             else uiElementsNeededWidth = Math.Max(uiElementsNeededWidth, Raylib_cs.Raylib.MeasureText(bodyUIElements[i].elemDesc.text, 15));
         }
 
-        int maxPortTSize = -1;
+        int titleWidth = showHeader ? (Raylib_cs.Raylib.MeasureText(title, 15) + 30) : 0;
 
-        for (int i = 0; i < inputPortIdNames.Count; i++)
-            maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(inputPortIdNames[i].name));
-
-        for (int i = 0; i < outputPortIdNames.Count; i++)
-            maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(outputPortIdNames[i].name));
-
-        if (maxPortTSize == -1)
-            maxPortTSize = 10;
-
-        // The first + 10 is what the port adds while rendering. The second is extra padding. Where there is only one + 10, then in those cases it is just extra padding.
-        int bodyHPaddingInputSide = inputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
-        int bodyHPaddingOutputSize = outputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 10 + 10 : portsPadding + 10;
-
-        int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSize;
-
-        if (width - totalBodyHPadding < uiElementsNeededWidth)
+        if (Flow == NodeFlow.Vertical)
         {
-            width = uiElementsNeededWidth + totalBodyHPadding;
-            headerWidth = width;
+            List<(int id, string name)> execIn = [];
+            List<(int id, string name)> dataIn = [];
+            List<(int id, string name)> execOut = [];
+            List<(int id, string name)> dataOut = [];
+
+            for (int i = 0; i < inputPortIdNames.Count; i++)
+            {
+                Port p = n.InputPorts[inputPortIdNames[i].id];
+                if (p.DataType.Category.HasFlag(DataCategory.Execution))
+                    execIn.Add(inputPortIdNames[i]);
+                else
+                    dataIn.Add(inputPortIdNames[i]);
+            }
+
+            for (int i = 0; i < outputPortIdNames.Count; i++)
+            {
+                Port p = n.OutputPorts[outputPortIdNames[i].id];
+                if (p.DataType.Category.HasFlag(DataCategory.Execution))
+                    execOut.Add(outputPortIdNames[i]);
+                else
+                    dataOut.Add(outputPortIdNames[i]);
+            }
+
+            int maxDataInSize = -1;
+            for (int i = 0; i < dataIn.Count; i++)
+                maxDataInSize = Math.Max(maxDataInSize, PortVisual.GetPortTSize(dataIn[i].name));
+
+            int maxDataOutSize = -1;
+            for (int i = 0; i < dataOut.Count; i++)
+                maxDataOutSize = Math.Max(maxDataOutSize, PortVisual.GetPortTSize(dataOut[i].name));
+
+            int bodyHPaddingInputSide = dataIn.Count > 0 ? maxDataInSize + portsPadding + 20 : portsPadding + 10;
+            int bodyHPaddingOutputSide = dataOut.Count > 0 ? maxDataOutSize + portsPadding + 20 : portsPadding + 10;
+            int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSide;
+
+            float widthData = uiElementsNeededWidth > 0 ? uiElementsNeededWidth + totalBodyHPadding : defaultWidth;
+
+            float execTopNeededWidth = 0;
+            if (execIn.Count > 0)
+            {
+                float totalLabelsW = 0;
+                for (int i = 0; i < execIn.Count; i++)
+                    totalLabelsW += Math.Max(portsSpacing, PortVisual.GetPortTSize(execIn[i].name) + 20);
+                execTopNeededWidth = totalLabelsW + portsPadding * 2;
+            }
+
+            float execBottomNeededWidth = 0;
+            if (execOut.Count > 0)
+            {
+                float totalLabelsW = 0;
+                for (int i = 0; i < execOut.Count; i++)
+                    totalLabelsW += Math.Max(portsSpacing, PortVisual.GetPortTSize(execOut[i].name) + 20);
+                execBottomNeededWidth = totalLabelsW + portsPadding * 2;
+            }
+
+            float width = Math.Max(defaultWidth, Math.Max(titleWidth, Math.Max(widthData, Math.Max(execTopNeededWidth, execBottomNeededWidth))));
+            float headerWidth = width;
+
+            float topMargin = execIn.Count > 0 ? (headerHeight + 25) : (headerHeight + 15);
+            float bottomMargin = execOut.Count > 0 ? 25 : 15;
+
+            int maxDataPorts = Math.Max(dataIn.Count, dataOut.Count);
+            float dataPortsHeight = topMargin + (maxDataPorts > 0 ? (maxDataPorts - 1) * portsSpacing : 0) + bottomMargin;
+
+            float uiBodyHeight = (bodyUIElements.Count * 25) + ((bodyUIElements.Count - 1) * 5);
+            float uiTotalHeight = topMargin + (bodyUIElements.Count > 0 ? uiBodyHeight : 0) + bottomMargin;
+
+            float height = Math.Max(defaultHeight, Math.Max(dataPortsHeight, uiTotalHeight));
+            int bodyWidth = (int)(width - totalBodyHPadding);
+
+            inputPorts = [];
+            outputPorts = [];
+
+            if (execIn.Count == 1)
+            {
+                Port p = n.InputPorts[execIn[0].id];
+                PortVisual pv = new(execIn[0].id, PortFlowType.Input, new Vector2(width / 2f, 0), execIn[0].name, p.DataType.Id, this);
+                inputPorts.Add(pv);
+            }
+            else if (execIn.Count > 1)
+            {
+                float step = (width - 2 * portsPadding) / (execIn.Count - 1);
+                for (int i = 0; i < execIn.Count; i++)
+                {
+                    Port p = n.InputPorts[execIn[i].id];
+                    PortVisual pv = new(execIn[i].id, PortFlowType.Input, new Vector2(portsPadding + i * step, 0), execIn[i].name, p.DataType.Id, this);
+                    inputPorts.Add(pv);
+                }
+            }
+
+            if (execOut.Count == 1)
+            {
+                Port p = n.OutputPorts[execOut[0].id];
+                PortVisual pv = new(execOut[0].id, PortFlowType.Output, new Vector2(width / 2f, height), execOut[0].name, p.DataType.Id, this);
+                outputPorts.Add(pv);
+            }
+            else if (execOut.Count > 1)
+            {
+                float step = (width - 2 * portsPadding) / (execOut.Count - 1);
+                for (int i = 0; i < execOut.Count; i++)
+                {
+                    Port p = n.OutputPorts[execOut[i].id];
+                    PortVisual pv = new(execOut[i].id, PortFlowType.Output, new Vector2(portsPadding + i * step, height), execOut[i].name, p.DataType.Id, this);
+                    outputPorts.Add(pv);
+                }
+            }
+
+            for (int i = 0; i < dataIn.Count; i++)
+            {
+                Port p = n.InputPorts[dataIn[i].id];
+                PortVisual pv = new(dataIn[i].id, PortFlowType.Input, new Vector2(portsPadding, topMargin + i * portsSpacing), dataIn[i].name, p.DataType.Id, this);
+                inputPorts.Add(pv);
+            }
+
+            for (int i = 0; i < dataOut.Count; i++)
+            {
+                Port p = n.OutputPorts[dataOut[i].id];
+                PortVisual pv = new(dataOut[i].id, PortFlowType.Output, new Vector2(width - portsPadding, topMargin + i * portsSpacing), dataOut[i].name, p.DataType.Id, this);
+                outputPorts.Add(pv);
+            }
+
+            rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
+            headerRect = showHeader ? new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
+
+            nodeBodyLayout = new ChildLayout(bodyUIElements,
+                                                bodyHPaddingInputSide,
+                                                (int)topMargin,
+                                                bodyWidth,
+                                                (int)(height - topMargin - bottomMargin), this);
         }
-
-        int bodyWidth = (int)(width - totalBodyHPadding);
-
-        inputPorts = [];
-        outputPorts = [];
-
-        for (int i = 0; i < inputPortIdNames.Count; i++)
+        else
         {
-            Port p = n.InputPorts[inputPortIdNames[i].id];
-            PortVisual pv = new(inputPortIdNames[i].id, PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
-            inputPorts.Add(pv);
+            int portsInitialYOffset = showHeader ? 30 : 15;
+            int maxPortTSize = -1;
+
+            for (int i = 0; i < inputPortIdNames.Count; i++)
+                maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(inputPortIdNames[i].name));
+
+            for (int i = 0; i < outputPortIdNames.Count; i++)
+                maxPortTSize = Math.Max(maxPortTSize, PortVisual.GetPortTSize(outputPortIdNames[i].name));
+
+            if (maxPortTSize == -1)
+                maxPortTSize = 10;
+
+            int bodyHPaddingInputSide = inputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 20 : portsPadding + 10;
+            int bodyHPaddingOutputSide = outputPortIdNames.Count > 0 ? maxPortTSize + portsPadding + 20 : portsPadding + 10;
+            int totalBodyHPadding = bodyHPaddingInputSide + bodyHPaddingOutputSide;
+
+            float width = defaultWidth;
+            if (width - totalBodyHPadding < uiElementsNeededWidth)
+                width = uiElementsNeededWidth + totalBodyHPadding;
+            width = Math.Max(width, titleWidth);
+            float headerWidth = width;
+
+            int portsMax = Math.Max(inputPortIdNames.Count, outputPortIdNames.Count);
+            float height = defaultHeight;
+            if (portsMax > 2)
+                height += (portsMax - 2) * portsSpacing + portsPadding;
+
+            int uiElementsNeededHeight = portsInitialYOffset + (bodyUIElements.Count * 25) + ((bodyUIElements.Count - 1) * 5) + 10;
+            if (height < uiElementsNeededHeight)
+                height = uiElementsNeededHeight;
+
+            int bodyWidth = (int)(width - totalBodyHPadding);
+
+            inputPorts = [];
+            outputPorts = [];
+
+            for (int i = 0; i < inputPortIdNames.Count; i++)
+            {
+                Port p = n.InputPorts[inputPortIdNames[i].id];
+                PortVisual pv = new(inputPortIdNames[i].id, PortFlowType.Input, new Vector2(portsPadding, portsInitialYOffset + i * portsSpacing), inputPortIdNames[i].name, p.DataType.Id, this);
+                inputPorts.Add(pv);
+            }
+
+            for (int i = 0; i < outputPortIdNames.Count; i++)
+            {
+                Port p = n.OutputPorts[outputPortIdNames[i].id];
+                PortVisual pv = new(outputPortIdNames[i].id, PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
+                outputPorts.Add(pv);
+            }
+
+            rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
+            headerRect = showHeader ? new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight) : new Raylib_cs.Rectangle(0, 0, 0, 0);
+
+            nodeBodyLayout = new ChildLayout(bodyUIElements,
+                                                bodyHPaddingInputSide,
+                                                portsInitialYOffset,
+                                                bodyWidth,
+                                                (int)(height - portsInitialYOffset), this);
         }
-
-        for (int i = 0; i < outputPortIdNames.Count; i++)
-        {
-            Port p = n.OutputPorts[outputPortIdNames[i].id];
-            PortVisual pv = new(outputPortIdNames[i].id, PortFlowType.Output, new Vector2(width - portsPadding, portsInitialYOffset + i * portsSpacing), outputPortIdNames[i].name, p.DataType.Id, this);
-            outputPorts.Add(pv);
-        }
-
-        rect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, width, height);
-        headerRect = new Raylib_cs.Rectangle(RelativePosition.X, RelativePosition.Y, headerWidth, headerHeight);
-
-        nodeBodyLayout = new ChildLayout(bodyUIElements,
-                                            bodyHPaddingInputSide,
-                                            portsInitialYOffset,
-                                            bodyWidth,
-                                            (int)height, this);
     }
 
     protected override Drawable? OnChildrenHitTest(IWorldToScreenTransformer transformer, Vector2 mouseScreenPosition, Vector2 mouseWorldPosition)
@@ -212,10 +372,13 @@ public class NodeVisual : Actor, IPointerInteractable, IDragable
 
         Raylib_cs.Raylib.DrawRectangleRounded(rect, bgRectRoundness, (int)bgRectSegments, bgRectFillColor);
         Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(rect, bgRectRoundness, (int)bgRectSegments, bgRectOutlineThickness, bgRectBorderColor);
-        Raylib_cs.Raylib.DrawRectangleRounded(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectFillColor);
-        Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectOutlineThickness, hdRectBorderColor);
 
-        LayoutEngine.DrawTextAbsolute(title, (int)rect.X + 5, (int)rect.Y, titleColor, 15, Vector2.Zero);
+        if (showHeader)
+        {
+            Raylib_cs.Raylib.DrawRectangleRounded(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectFillColor);
+            Raylib_cs.Raylib.DrawRectangleRoundedLinesEx(headerRect, hdRectRoundness, (int)hdRectSegments, hdRectOutlineThickness, hdRectBorderColor);
+            LayoutEngine.DrawTextAbsolute(title, (int)rect.X + 5, (int)rect.Y + 2, titleColor, 15, Vector2.Zero);
+        }
 
         nodeBodyLayout.Render();
 

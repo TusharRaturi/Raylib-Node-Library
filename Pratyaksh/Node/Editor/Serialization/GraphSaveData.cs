@@ -22,6 +22,8 @@ public class NodeTemplateSaveData
     public List<string> InputPortTypeNames { get; set; } = new();
     public List<string> OutputPortTypeNames { get; set; } = new();
     public List<UIElementSaveData> UIElements { get; set; } = new();
+    public int Flow { get; set; } // 0 for Vertical, 1 for Horizontal
+    public bool ShowHeader { get; set; } = true;
     public JsonElement? Payload { get; set; }
 }
 
@@ -63,6 +65,8 @@ public class NodeSaveData
     public int TemplateId { get; set; } = -1;
     public float PositionX { get; set; }
     public float PositionY { get; set; }
+    public int Flow { get; set; } // 0 for Vertical, 1 for Horizontal
+    public bool ShowHeader { get; set; } = true;
     public List<PortSaveData> InputPorts { get; set; } = new();
     public List<PortSaveData> OutputPorts { get; set; } = new();
     public List<JsonElement?> UIElementValues { get; set; } = new();

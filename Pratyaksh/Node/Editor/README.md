@@ -13,7 +13,7 @@
   - 2D Editor Camera (`EditorCamera2D`) with smooth right-mouse panning and mouse-wheel zooming.
   - Infinite grid background (`GraphBG`) with coordinate transformations.
 - **Dynamic Node Visuals**:
-  - `NodeVisual`: Rounded node card rendering, colored headers, dragging, port pins, and auto-expanding heights.
+  - `NodeVisual`: Rounded node card rendering, configurable vertical/horizontal execution flows, hidable colored headers, dragging, port pins, and auto-expanding heights.
   - **Embedded Node Widgets**: Embed arbitrary UI elements (`Text`, `InputField`, `Button`, `Toggle`, `Selectable`, `Group`) directly inside the node body.
 - **Wire Routing & Visual Connections**:
   - `WireVisual` & `ConnectionVisualManager`: Smooth cubic bezier curve wires with type-based color coding and interactive drag-and-drop linking.
@@ -82,7 +82,9 @@ NodeEditorEngine.NodeRegistry.RegisterNode(new NodeTemplate(
     outputPortTypeNames: ["Float"],
     uiElements: [
         (UIElementType.Text, new TextDesc("Computes: A + B", Color.White))
-    ]
+    ],
+    flow: NodeFlow.Horizontal,
+    showHeader: true
 ));
 
 // Register an interactive Form Node template with embedded inputs
@@ -98,7 +100,9 @@ NodeEditorEngine.NodeRegistry.RegisterNode(new NodeTemplate(
         {
             Console.WriteLine("Button clicked inside node visual!");
         }))
-    ]
+    ],
+    flow: NodeFlow.Vertical,
+    showHeader: false
 ));
 ```
 

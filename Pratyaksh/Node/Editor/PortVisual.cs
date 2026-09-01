@@ -78,6 +78,47 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
                 portName = newPortName;
                 portTSize = GetPortTSize(portName);
             }
+
+            UpdateInteractionRect();
+        }
+    }
+
+    public void UpdateInteractionRect()
+    {
+        if (Parent != null && parentNodeUI == null)
+            parentNodeUI = Parent as NodeVisual;
+
+        if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
+        {
+            float rectW = Math.Max(portSize * 2 + 10, portTSize + 10);
+            float rectH = portSize * 2 + portTFontSize + 8;
+            if (portFlowType == PortFlowType.Input)
+                portInteractionRelativeRect = new(-rectW / 2f, -portSize - 2, rectW, rectH);
+            else
+                portInteractionRelativeRect = new(-rectW / 2f, -rectH + portSize + 2, rectW, rectH);
+        }
+        else
+        {
+            int hoverRectFlowOffset = portFlowType == PortFlowType.Input ? 0 : -(portTSize + 5);
+            portInteractionRelativeRect = new(-portSize + hoverRectFlowOffset, -portSize - 2, portTSize + portSize * 2 + 10, portSize * 2 + 5);
+        }
+    }
+
+    public Vector2 GetBezierTangent(float offset)
+    {
+        if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
+        {
+            if (portFlowType == PortFlowType.Input)
+                return new Vector2(0, -offset);
+            else
+                return new Vector2(0, offset);
+        }
+        else
+        {
+            if (portFlowType == PortFlowType.Input)
+                return new Vector2(-offset, 0);
+            else
+                return new Vector2(offset, 0);
         }
     }
 
@@ -104,10 +145,9 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         portTSize = GetPortTSize(portName);
 
         if (Parent != null)
-            parentNodeUI = (NodeVisual)Parent;
+            parentNodeUI = Parent as NodeVisual;
 
-        int hoverRectFlowOffset = portFlowType == PortFlowType.Input ? 0 : -(portTSize + 5);
-        portInteractionRelativeRect = new(-portSize + hoverRectFlowOffset, -portSize - 2, portTSize + portSize * 2 + 10, portSize * 2 + 5);
+        UpdateInteractionRect();
     }
 
     protected override void OnDraw()
@@ -121,11 +161,11 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
         if (isExecution)
         {
             Vector2 p1, p2, p3;
-            if (portFlowType == PortFlowType.Input)
+            if (parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
             {
                 p1 = new Vector2(Position.X - portSize, Position.Y - portSize);
-                p2 = new Vector2(Position.X - portSize, Position.Y + portSize);
-                p3 = new Vector2(Position.X + portSize, Position.Y);
+                p2 = new Vector2(Position.X, Position.Y + portSize);
+                p3 = new Vector2(Position.X + portSize, Position.Y - portSize);
             }
             else
             {
@@ -147,7 +187,22 @@ public class PortVisual : Actor, IPointerVisitable, IPointerInteractable, IDraga
             Raylib_cs.Raylib.DrawCircleLines((int)Position.X, (int)Position.Y, portSize, portColor);
         }
 
-        if (!isExecution)
+        if (isExecution && parentNodeUI != null && parentNodeUI.Flow == NodeFlow.Vertical)
+        {
+            if (portFlowType == PortFlowType.Input)
+            {
+                int textX = (int)(Position.X - portTSize / 2f);
+                int textY = (int)(Position.Y + portSize + 3);
+                LayoutEngine.DrawTextAbsolute(portName, textX, textY, portTextColor, portTFontSize, Vector2.Zero);
+            }
+            else
+            {
+                int textX = (int)(Position.X - portTSize / 2f);
+                int textY = (int)(Position.Y - portSize - portTFontSize - 3);
+                LayoutEngine.DrawTextAbsolute(portName, textX, textY, portTextColor, portTFontSize, Vector2.Zero);
+            }
+        }
+        else
         {
             if (portFlowType == PortFlowType.Input)
                 LayoutEngine.DrawTextAbsolute(portName, (int)Position.X + 10, (int)Position.Y - 5, portTextColor, portTFontSize, Vector2.Zero);

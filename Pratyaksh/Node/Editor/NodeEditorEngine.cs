@@ -474,6 +474,12 @@ public class NodeEditorEngine : BaseRaylibEngine
             (UIElementType.Toggle, new ToggleDesc("Toggle", true, 38, 20, (toggle) => { Console.WriteLine("Toggled: " + toggle.IsOn); }))
         ]));
 
+        NodeRegistry.RegisterNode(new NodeTemplate("Vertical Entry Node", "Basic", ["String"], ["Execution", "String"],
+            [(UIElementType.Text, new TextDesc("Vertical Text", 15, Raylib_cs.Color.White))], NodeFlow.Vertical));
+
+        NodeRegistry.RegisterNode(new NodeTemplate("Vertical Node", "Basic", ["Execution", "String"], ["Execution", "String"],
+            [(UIElementType.Text, new TextDesc("Vertical Text", 15, Raylib_cs.Color.White))], NodeFlow.Vertical, false));
+
         NodeRegistry.RegisterNode(new NodeTemplate("Class Node", "Basic", 
             ["Execution", "String", "Int", "Number"], 
             ["Execution", "Int", "String"], [
@@ -612,7 +618,8 @@ public class NodeEditorEngine : BaseRaylibEngine
                         payload = tData.Payload.Value.GetString();
                 }
 
-                NodeTemplate template = new(tData.Id, tData.Name, tData.Category, tData.InputPortTypeNames, tData.OutputPortTypeNames, uiElements, payload);
+                NodeFlow flow = (NodeFlow)tData.Flow;
+                NodeTemplate template = new(tData.Id, tData.Name, tData.Category, tData.InputPortTypeNames, tData.OutputPortTypeNames, uiElements, flow, tData.ShowHeader, payload);
                 NodeRegistry.RegisterNode(template);
             }
         }
@@ -671,8 +678,9 @@ public class NodeEditorEngine : BaseRaylibEngine
 
             List<(UIElementType, UIElementDescription)> uiElems = template != null ? template.UIElements : [];
             string titleName = template != null ? template.Name : "Node " + n.Id;
+            NodeFlow nodeFlow = (NodeFlow)nd.Flow;
 
-            NodeVisual nodeVis = new(n.Id, uiElems, titleName, nd.PositionX, nd.PositionY);
+            NodeVisual nodeVis = new(n.Id, uiElems, titleName, nd.PositionX, nd.PositionY, nodeFlow, nd.ShowHeader);
             if (nd.UIElementValues != null && nd.UIElementValues.Count > 0)
             {
                 nodeVis.SetUIStatePayloads(nd.UIElementValues);
